@@ -23,6 +23,9 @@ def render_sidebar():
 
     # growth
     growth = st.sidebar.selectbox("Growth", ["linear", "logistic", "flat"])
+    cap = None
+    if growth == "logistic":
+        cap = int(st.sidebar.number_input("Logistic Growth Capacity"))
 
     # n_changepoints
     st.sidebar.markdown("n_changepoints")
@@ -113,7 +116,8 @@ def render_sidebar():
             "mcmc_samples": mcmc_samples,
             "interval_width": interval_width,
             "uncertainty_samples": uncertainty_samples
-        }
+        },
+        "logistic_cap": cap
     }
     return sidebar_conf
 
@@ -146,11 +150,11 @@ def plot_prophet_components(plot, comp_plot):
     columns[1].plotly_chart(comp_plot, use_container_width=True)
 
 
-def run_model(dataset, period, horizon, prophet_args, normalize_coeffs):
+def run_model(dataset, period, horizon, prophet_args, normalize_coeffs, cap=None):
     data = read_data(dataset)
     train, holidays = decompose_data(data, period)
     forecast, plot, comp_plot = fit_predict(
-        train, holidays, prophet_args, period=period, horizon=horizon)
+        train, holidays, prophet_args, period=period, horizon=horizon, cap=cap)
     if normalize_coeffs:
         for col in ["yearly", "weekly", "daily", "holidays"]:
             if col in forecast.columns:
@@ -172,7 +176,8 @@ def render_header():
             period = st.selectbox("Period", ["W", "D"])
             default_horizon = 52 if period == "W" else 365
         with columns[2]:
-            horizon = int(st.number_input("horizon", value=default_horizon))
+            horizon = st.number_input(
+                "horizon", value=default_horizon, min_value=1)
 
         # normalize coeffs
         with columns[3]:
@@ -213,7 +218,8 @@ if header_conf["run_btn"]:
             header_conf["period"],
             header_conf["horizon"],
             sidebar_conf["prophet_args"],
-            header_conf["normalize_coeffs"]
+            header_conf["normalize_coeffs"],
+            cap=sidebar_conf["logistic_cap"]
         )
         render_download_callback(forecast)
     render_page(forecast, plot, comp_plot)

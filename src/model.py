@@ -4,11 +4,17 @@ from prophet import Prophet
 from prophet.plot import plot_plotly, plot_components_plotly
 
 
-def fit_predict(train_df, holidays, prophet_args, horizon=90, period="D"):
+def fit_predict(train_df, holidays, prophet_args, horizon=90, period="D", cap=None):
+    if cap is not None:
+        train_df["cap"] = cap
     model = Prophet(holidays=holidays, **prophet_args)
     model.fit(train_df)
+
     future = model.make_future_dataframe(horizon, freq=period)
+    if cap is not None:
+        future["cap"] = cap
     forecast = model.predict(future)
+
     plot = plot_plotly(model, forecast)
     components = plot_components_plotly(model, forecast)
 
