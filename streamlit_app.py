@@ -159,37 +159,46 @@ def run_model(dataset, period, horizon, prophet_args, normalize_coeffs):
 
 
 def render_header():
-    st.container()
-    columns: list[st.container] = st.columns(5)
+    with st.container():
+        columns: list[st.container] = st.columns(6)
 
-    # datasets
-    datasets = list_datasets()
-    dataset = columns[0].selectbox("Dataset", datasets)
+        # datasets
+        datasets = list_datasets()
+        with columns[0]:
+            dataset = st.selectbox("Dataset", datasets)
 
-    # period
-    period = columns[1].selectbox("Period", ["W", "D"])
-    default_horizon = 52 if period == "W" else 365
-    horizon = int(columns[2].number_input("horizon", value=default_horizon))
+        # period
+        with columns[1]:
+            period = st.selectbox("Period", ["W", "D"])
+            default_horizon = 52 if period == "W" else 365
+        with columns[2]:
+            horizon = int(st.number_input("horizon", value=default_horizon))
 
-    # normalize coeffs
-    columns[3].markdown("Normalize Coefficients")
-    normalize_coeffs = columns[3].checkbox("Normalize Coefficients", True)
+        # normalize coeffs
+        with columns[3]:
+            st.markdown("Normalize Coefficients")
+            normalize_coeffs = st.checkbox("Normalize Coefficients", True)
 
-    def render_download_btn(fc):
-        st.container()
-        download_data = fc.to_csv().encode("utf-8")
-        columns[4].download_button(
-            label="Download Forecasts",
-            data=download_data,
-            file_name='forecast.csv',
-            mime='text/csv',
-        )
+        with columns[4]:
+            run_btn = st.button("Run!")
+
+        def render_download_btn(fc):
+            with columns[5]:
+                download_data = fc.to_csv().encode("utf-8")
+                file_name = dataset.replace(".csv", "") + "_forecast.csv"
+                st.download_button(
+                    label="Download Forecasts",
+                    data=download_data,
+                    file_name=file_name,
+                    mime='text/csv',
+                )
 
     header_conf = {
         "dataset": dataset,
         "period": period,
         "horizon": horizon,
-        "normalize_coeffs": normalize_coeffs
+        "normalize_coeffs": normalize_coeffs,
+        "run_btn": run_btn
     }
 
     return header_conf, render_download_btn
@@ -197,14 +206,14 @@ def render_header():
 
 header_conf, render_download_callback = render_header()
 sidebar_conf = render_sidebar()
-with st.spinner("Training prophet model"):
-    forecast, plot, comp_plot = run_model(
-        header_conf["dataset"],
-        header_conf["period"],
-        header_conf["horizon"],
-        sidebar_conf["prophet_args"],
-        header_conf["normalize_coeffs"]
-    )
-    render_download_callback(forecast)
-st.balloons()
-render_page(forecast, plot, comp_plot)
+if header_conf["run_btn"]:
+    with st.spinner("Training prophet model"):
+        forecast, plot, comp_plot = run_model(
+            header_conf["dataset"],
+            header_conf["period"],
+            header_conf["horizon"],
+            sidebar_conf["prophet_args"],
+            header_conf["normalize_coeffs"]
+        )
+        render_download_callback(forecast)
+    render_page(forecast, plot, comp_plot)

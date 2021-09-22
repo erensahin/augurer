@@ -4,6 +4,7 @@ Helper functions
 import os
 
 import pandas as pd
+import streamlit as st
 
 DS_FOLDER = "./datasets"
 
@@ -12,11 +13,13 @@ def list_datasets():
     return [f for f in os.listdir(DS_FOLDER) if f.endswith(".csv")]
 
 
+@st.cache(allow_output_mutation=True)
 def read_data(dataset):
     path = os.path.join(DS_FOLDER, dataset)
     return pd.read_csv(path)
 
 
+@st.cache(allow_output_mutation=True)
 def decompose_data(df, period="D"):
     train_data = df[["yearweek", "ds", "y"]]
     train_data = train_data[train_data["y"].notna()]
