@@ -6,7 +6,8 @@ import os
 import pandas as pd
 import streamlit as st
 
-DS_FOLDER = "./datasets"
+DS_FOLDER = os.path.join(os.path.dirname(
+    os.path.dirname(__file__)), "datasets")
 
 
 def list_datasets():
