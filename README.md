@@ -1,1 +1,3 @@
-# prophet-experimentation-tool
+# augurer
+
+Time-Series Forecast Analysis tool powered by streamlit
