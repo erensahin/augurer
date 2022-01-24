@@ -148,6 +148,25 @@ def plot_seasonality(fc):
     st.line_chart(fc)
 
 
+def render_predictions(
+        model: BaseForecaster, predictions: pd.DataFrame) -> None:
+    """
+    Helper function to render predictions
+
+    :param model: model instance
+    :type model: BaseForecaster
+    :param predictions: prediction dataframe
+    :type predictions: pd.DataFrame
+    :return: None
+    :rtype: None
+    """
+    forecast = model.get_forecast(predictions)
+    seasonality = model.get_seasonality(predictions)
+    plot_forecasts(forecast.set_index("ds"))
+    plot_seasonality(seasonality.set_index("ds"))
+    render_download_callback(predictions)
+
+
 if __name__ == "__main__":
     model_klass, model_args = render_sidebar()
     header_config, render_download_callback = render_header()
@@ -160,8 +179,10 @@ if __name__ == "__main__":
                 header_config["period"],
                 header_config["horizon"]
             )
-            forecast = model.get_forecast(predictions)
-            seasonality = model.get_seasonality(predictions)
-            plot_forecasts(predictions.set_index("ds"))
-            plot_seasonality(seasonality.set_index("ds"))
-            render_download_callback(predictions)
+            # push predictions to state
+            st.session_state["predictions"] = predictions
+            st.session_state["model"] = model
+            render_predictions(model, predictions)
+    elif "predictions" in st.session_state:
+        render_predictions(
+            st.session_state["model"], st.session_state["predictions"])
