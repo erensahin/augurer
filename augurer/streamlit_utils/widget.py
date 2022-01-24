@@ -18,9 +18,15 @@ class InputWidgetOption:
     step: float = None
     no_return: bool = False
 
-    def render(self, st_container: DeltaGenerator, **kwargs):
+    def render(self, st_container: DeltaGenerator, **kwargs: Dict):
         """
         Helper method to render a widget
+
+        :param st_container: streamlit container object
+        :type st_container: DeltaGenerator
+        :param kwargs: additional options will be passed to prereq
+            of the widget, if prereq is given
+        :type kwargs: Dict
         """
         if self.prereq:
             condition, return_value = self.prereq(kwargs)

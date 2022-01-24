@@ -1,3 +1,5 @@
+from typing import Callable, Dict, Literal, Tuple, Type
+
 import pandas as pd
 import streamlit as st
 
@@ -15,7 +17,13 @@ st.set_page_config(
 )
 
 
-def render_sidebar():
+def render_sidebar() -> Tuple[Type[BaseForecaster], Dict]:
+    """
+    Renders the sidebar - Model and related model parameter widgets
+
+    :return: model class and arguments which will be passed to model
+    :rtype: Tuple[Type[BaseForecaster], Dict]
+    """
     st.sidebar.markdown("**Models**")
     model_name = st.sidebar.selectbox("Model", list(MODELS.keys()))
     model_klass = MODELS[model_name]
@@ -36,7 +44,19 @@ def render_sidebar():
     return model_klass, model_args
 
 
-def render_header():
+def render_header() -> Tuple[Dict, Callable]:
+    """
+    Renders the header:
+
+        * dataset selectbox
+        * period selectbox
+        * horizon selectbox
+        * run button
+        * download button
+
+    :return: header options and callback for rendering download button
+    :rtype: Tuple[Dict, Callable]
+    """
     with st.container():
         columns: list[st.container] = st.columns(5)
 
@@ -80,11 +100,25 @@ def render_header():
 
 
 def run_model(
-        model: BaseForecaster,
-        dataset: pd.DataFrame,
-        period: int,
-        horizon: int
-):
+    model: BaseForecaster,
+    dataset: str,
+    period: Literal["D", "W"],
+    horizon: int
+) -> pd.DataFrame:
+    """
+    Helper function to run a model on fit_predict mode for given dataset
+
+    :param model: model instance
+    :type model: BaseForecaster
+    :param dataset: name of the selected dataset
+    :type dataset: str
+    :param period: periodicity of data. "D" for day, "W" for week
+    :type period: Literal["D", "W"]
+    :param horizon: forecast horizon length
+    :type horizon: int
+    :return: predictions
+    :rtype: pd.DataFrame
+    """
     data = read_data(dataset)
     train_df, holidays_df = decompose_data(data, period)
     test_df = model.make_test_dataframe(train_df, period, horizon)
@@ -92,28 +126,42 @@ def run_model(
     return fc
 
 
-def plot_forecasts(fc):
+def plot_forecasts(fc: pd.DataFrame) -> None:
+    """
+    Helper to plot forecast results
+
+    :return: None
+    :rtype: None
+    """
     st.markdown("**Forecast vs Actual & Trend**")
     st.line_chart(fc[["prediction", "actual", "trend"]])
 
 
 def plot_seasonality(fc):
+    """
+    Helper to plot seasonality results
+
+    :return: None
+    :rtype: None
+    """
     st.markdown("**Seasonality Coefficients**")
     st.line_chart(fc)
 
 
-model_klass, model_args = render_sidebar()
-header_config, render_download_callback = render_header()
-if header_config["run_btn"]:
-    with st.spinner("Training model"):
-        model: BaseForecaster = model_klass(model_args)
-        forecast = run_model(
-            model,
-            header_config["dataset"],
-            header_config["period"],
-            header_config["horizon"]
-        )
-        predictions = model.get_predictions(forecast)
-        seasonality = model.get_seasonality(forecast)
-        plot_forecasts(predictions.set_index("ds"))
-        plot_seasonality(seasonality.set_index("ds"))
+if __name__ == "__main__":
+    model_klass, model_args = render_sidebar()
+    header_config, render_download_callback = render_header()
+    if header_config["run_btn"]:
+        with st.spinner("Training model"):
+            model: BaseForecaster = model_klass(model_args)
+            predictions = run_model(
+                model,
+                header_config["dataset"],
+                header_config["period"],
+                header_config["horizon"]
+            )
+            forecast = model.get_forecast(predictions)
+            seasonality = model.get_seasonality(predictions)
+            plot_forecasts(predictions.set_index("ds"))
+            plot_seasonality(seasonality.set_index("ds"))
+            render_download_callback(predictions)

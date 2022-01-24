@@ -1,30 +1,67 @@
-import pandas as pd
-import numpy as np
+from typing import Any, Dict, Literal
 
+import pandas as pd
 from prophet import Prophet
-from prophet.plot import plot_plotly, plot_components_plotly
 
 from .base import BaseForecaster
 
 
 class ProphetForecast(BaseForecaster):
+    """
+    Prophet model wrapper class
 
-    def __init__(self, model_args):
+    :param model_args: model arguments
+    :type model_args: Dict[str, Any]
+    """
+
+    def __init__(self, model_args: Dict[str, Any]):
         super().__init__(model_args)
         self.model = None
 
-    def get_estimator(self, **kwargs):
+    def get_estimator(self, **kwargs: Dict[str, Any]) -> Prophet:
+        """
+        :return: Prophet model instance
+        :rtype: Prophet
+        """
         args = self.model_args.copy()
         args.update(kwargs)
         return Prophet(**args)
 
-    def fit(self, train_df, **kwargs):
+    def fit(self, train_df: pd.DataFrame, **kwargs: Dict[str, Any]) -> Prophet:
+        """
+        Trains a prophet model and returns trained model instance
+
+        :param train_df: train dataframe
+        :type train_df: pd.DataFrame
+        :param kwargs: additional arguments that will be passed to estimator
+        :type kwargs: Dict[str, Any]
+        :return: trained model instance
+        :rtype: Prophet
+        """
         model = self.get_estimator(**kwargs)
         model.fit(train_df)
         self.model = model
         return model
 
-    def make_test_dataframe(self, train_df, period, horizon):
+    def make_test_dataframe(
+        self,
+        train_df: pd.DataFrame,
+        period: Literal["D", "W"],
+        horizon: int
+    ) -> pd.DataFrame:
+        """
+        Creates a test dataframe to forecast on.
+
+        :param train_df: train dataframe
+        :type train_df: pd.DataFrame
+        :param period: periodicity of input data. should be "D" for day or
+            "W" for week.
+        :type period: Literal["D", "W"]
+        :param horizon: forecast horizon of future test data
+        :type horizon: int
+        :return: test dataframe
+        :rtype: pd.DataFrame
+        """
         if self.model:
             test_df = self.model.make_future_dataframe(horizon, freq=period)
         else:
@@ -41,8 +78,18 @@ class ProphetForecast(BaseForecaster):
         return pd.merge(
             test_df["ds"], train_df[["ds", "y"]], on="ds", how="left")
 
-    def predict(self, test_df):
-        forecast = self.model.predict(test_df)
+    def predict(self, model: Prophet, test_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Predicts on a trained model
+
+        :param model: trained prophet model instance
+        :type model: Prophet
+        :param test_df: test dataframe
+        :type test_df: pd.DataFrame
+        :return: predictions
+        :rtype: pd.DataFrame
+        """
+        forecast = model.predict(test_df)
         forecast["ds"] = forecast["ds"].astype(str)
         forecast = pd.merge(
             forecast, test_df[["ds", "y"]], on="ds", how="left")
@@ -67,15 +114,42 @@ class ProphetForecast(BaseForecaster):
             "yhat_lower": "prediction_lower"
         })
 
-    def fit_predict(self, train_df, test_df, **kwargs):
+    def fit_predict(
+        self,
+        train_df: pd.DataFrame,
+        test_df: pd.DataFrame,
+        **kwargs: Dict[str, Any]
+    ) -> pd.DataFrame:
+        """
+        Trains a prophet model and returns trained model instance
+
+        :param train_df: train dataframe
+        :type train_df: pd.DataFrame
+        :param test_df: test dataframe
+        :type test_df: pd.DataFrame
+        :param kwargs: additional arguments that will be passed to estimator
+            or will be used as helpers to create test dataframe:
+            `horizon` and `period`
+        :type kwargs: Dict[str, Any]
+        :return: prediction dataframe
+        :rtype: pd.DataFrame
+        """
         horizon = kwargs.pop("horizon", None)
         period = kwargs.pop("period", None)
         model = self.fit(train_df, **kwargs)
         if test_df is None:
             test_df = model.make_future_dataframe(horizon, freq=period)
-        return self.predict(test_df)
+        return self.predict(model, test_df)
 
-    def get_predictions(self, forecast):
+    def get_forecast(self, prediction: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns forecast related information from prediction output.
+
+        :param prediction: prediction DataFrame
+        :type prediction: pd.DataFrame
+        :return: forecast DataFrame
+        :rtype: pd.DataFrame
+        """
         columns = [
             "actual",
             "prediction",
@@ -83,10 +157,18 @@ class ProphetForecast(BaseForecaster):
             "prediction_lower",
             "trend"
         ]
-        columns = [c for c in columns if c in forecast.columns]
-        return forecast[["ds", *columns]]
+        columns = [c for c in columns if c in prediction.columns]
+        return prediction[["ds", *columns]]
 
-    def get_seasonality(self, forecast):
+    def get_seasonality(self, forecast: pd.DataFrame) -> pd.DataFrame:
+        """
+        Returns seasonality related information from prediction output.
+
+        :param prediction: prediction DataFrame
+        :type prediction: pd.DataFrame
+        :return: seasonality DataFrame
+        :rtype: pd.DataFrame
+        """
         columns = [
             "yearly",
             "weekly",
@@ -97,7 +179,12 @@ class ProphetForecast(BaseForecaster):
         return forecast[["ds", *columns]]
 
     @staticmethod
-    def get_options():
+    def get_options() -> Dict[str, Any]:
+        """
+        :return: dictionary of model parameters and their widget
+            dictionaries that will be rendered
+        :rtype: Dict[str, Any]
+        """
         return {
             "seasonality_mode": {
                 "label": "seasonality mode",
