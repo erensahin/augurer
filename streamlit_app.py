@@ -2,6 +2,7 @@ from typing import Callable, Dict, Literal, Tuple, Type
 
 import pandas as pd
 import streamlit as st
+from augurer.helpers import calculate_metrics
 
 from augurer.model import MODELS
 from augurer.model.base import BaseForecaster
@@ -63,7 +64,7 @@ def render_header() -> Tuple[Dict, Callable]:
         # datasets
         datasets = list_datasets()
         with columns[0]:
-            dataset = st.selectbox("Dataset", datasets)
+            dataset = st.selectbox("Dataset", datasets, key="dataset")
 
         # period
         with columns[1]:
@@ -162,6 +163,20 @@ def render_predictions(
     """
     forecast = model.get_forecast(predictions)
     seasonality = model.get_seasonality(predictions)
+
+    # Render metrics
+    metrics = calculate_metrics(forecast)
+    prev_metrics = st.session_state.get("metrics")
+    st.session_state["metrics"] = metrics
+    columns: list[st.container] = st.columns(len(metrics))
+    for i, (index, row) in enumerate(metrics.iterrows()):
+        delta = (
+            prev_metrics.loc[index]["error"]
+            if prev_metrics is not None else None
+        )
+        delta = round(row["error"] - delta, 2) if delta else None
+        columns[i].metric(label=index, value=row["error"], delta=delta)
+
     plot_forecasts(forecast.set_index("ds"))
     plot_seasonality(seasonality.set_index("ds"))
     render_download_callback(predictions)
