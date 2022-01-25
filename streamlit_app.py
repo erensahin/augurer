@@ -26,7 +26,8 @@ def render_sidebar() -> Tuple[Type[BaseForecaster], Dict]:
     :rtype: Tuple[Type[BaseForecaster], Dict]
     """
     st.sidebar.markdown("**Models**")
-    model_name = st.sidebar.selectbox("Model", list(MODELS.keys()))
+    model_name = st.sidebar.selectbox(
+        "Model", list(MODELS.keys()), key="model_name")
     model_klass = MODELS[model_name]
 
     widget_options = model_klass.get_options()
@@ -82,9 +83,11 @@ def render_header() -> Tuple[Dict, Callable]:
         def render_download_btn(fc):
             with columns[4]:
                 download_data = fc.to_csv().encode("utf-8")
-                file_name = dataset.replace(".csv", "") + "_forecast.csv"
+                model_name = st.session_state["model_name"]
+                file_name = "_".join([
+                    dataset.replace(".csv", ""), model_name, ".csv"])
                 st.download_button(
-                    label="Download Forecasts",
+                    label="Download",
                     data=download_data,
                     file_name=file_name,
                     mime='text/csv',
