@@ -166,16 +166,9 @@ def render_predictions(
 
     # Render metrics
     metrics = calculate_metrics(forecast)
-    prev_metrics = st.session_state.get("metrics")
-    st.session_state["metrics"] = metrics
     columns: list[st.container] = st.columns(len(metrics))
     for i, (index, row) in enumerate(metrics.iterrows()):
-        delta = (
-            prev_metrics.loc[index]["error"]
-            if prev_metrics is not None else None
-        )
-        delta = round(row["error"] - delta, 2) if delta else None
-        columns[i].metric(label=index, value=row["error"], delta=delta)
+        columns[i].metric(label=index, value=row["error"])
 
     plot_forecasts(forecast.set_index("ds"))
     plot_seasonality(seasonality.set_index("ds"))
