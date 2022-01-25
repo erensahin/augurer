@@ -126,7 +126,13 @@ def run_model(
     data = read_data(dataset)
     train_df, holidays_df = decompose_data(data, period)
     test_df = model.make_test_dataframe(train_df, period, horizon)
-    fc = model.fit_predict(train_df, test_df, period=period, horizon=horizon)
+    fc = model.fit_predict(
+        train_df,
+        test_df,
+        period=period,
+        horizon=horizon,
+        holidays=holidays_df
+    )
     return fc
 
 
