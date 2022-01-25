@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Literal
+from typing import Any, Dict
 
 import pandas as pd
 
@@ -40,7 +40,7 @@ class BaseForecaster(ABC):
     def make_test_dataframe(
         self,
         train_df: pd.DataFrame,
-        period: Literal["day", "week"],
+        period: str,
         horizon: int
     ) -> pd.DataFrame:
         """
@@ -51,7 +51,7 @@ class BaseForecaster(ABC):
         :type train_df: pd.DataFrame
         :param period: periodicity of input data. should be "D" for day or
             "W" for week.
-        :type period: Literal["D", "W"]
+        :type period: str
         :param horizon: forecast horizon of future test data
         :type horizon: int
         :return: test dataframe

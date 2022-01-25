@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Literal, Tuple, Type
+from typing import Callable, Dict, Tuple, Type
 
 import pandas as pd
 import streamlit as st
@@ -106,7 +106,7 @@ def render_header() -> Tuple[Dict, Callable]:
 def run_model(
     model: BaseForecaster,
     dataset: str,
-    period: Literal["D", "W"],
+    period: str,
     horizon: int
 ) -> pd.DataFrame:
     """
@@ -117,7 +117,7 @@ def run_model(
     :param dataset: name of the selected dataset
     :type dataset: str
     :param period: periodicity of data. "D" for day, "W" for week
-    :type period: Literal["D", "W"]
+    :type period: str
     :param horizon: forecast horizon length
     :type horizon: int
     :return: predictions

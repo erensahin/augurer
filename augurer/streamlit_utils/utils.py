@@ -2,7 +2,7 @@
 Helper functions
 """
 import os
-from typing import List, Literal, Tuple
+from typing import List, Tuple
 
 import pandas as pd
 import streamlit as st
@@ -38,7 +38,7 @@ def read_data(dataset: str) -> pd.DataFrame:
 @st.cache(allow_output_mutation=True)
 def decompose_data(
     df: pd.DataFrame,
-    period: Literal["D", "W"] = "D"
+    period: str = "D"
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
     Helper method to decompose input data to time-series targets to train
@@ -47,7 +47,7 @@ def decompose_data(
     :param df: dataframe to decompose
     :type df: pd.DataFrame
     :param period: periodicity of the data. "D" for day, "W" for week
-    :type period: Literal["D", "W"]
+    :type period: str
     :return: tuple of train data and holiday data
     :rtype: Tuple[pd.DataFrame, pd.DataFrame]
     """

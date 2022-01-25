@@ -1,4 +1,4 @@
-from typing import Any, Dict, Literal
+from typing import Any, Dict
 
 import pandas as pd
 from prophet import Prophet
@@ -46,7 +46,7 @@ class ProphetForecast(BaseForecaster):
     def make_test_dataframe(
         self,
         train_df: pd.DataFrame,
-        period: Literal["D", "W"],
+        period: str,
         horizon: int
     ) -> pd.DataFrame:
         """
@@ -56,7 +56,7 @@ class ProphetForecast(BaseForecaster):
         :type train_df: pd.DataFrame
         :param period: periodicity of input data. should be "D" for day or
             "W" for week.
-        :type period: Literal["D", "W"]
+        :type period: str
         :param horizon: forecast horizon of future test data
         :type horizon: int
         :return: test dataframe
