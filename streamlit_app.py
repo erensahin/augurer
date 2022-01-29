@@ -6,7 +6,10 @@ from augurer.helpers import calculate_metrics
 
 from augurer.model import MODELS
 from augurer.model.base import BaseForecaster
-from augurer.streamlit_utils.utils import decompose_data, list_datasets, read_data
+from augurer.streamlit_utils.utils import (
+    decompose_data, list_datasets, get_uploaded_datasets,
+    get_data, put_uploaded_data_in_state, validate_uploaded_data
+)
 from augurer.streamlit_utils.widget import InputWidgetOption
 
 # Initial page config
@@ -60,10 +63,13 @@ def render_header() -> Tuple[Dict, Callable]:
     :rtype: Tuple[Dict, Callable]
     """
     with st.container():
-        columns: list[st.container] = st.columns(5)
+        columns: list[st.container] = st.columns([1, 1, 1, 1, 1, 2])
 
         # datasets
-        datasets = list_datasets()
+        datasets = list_datasets().copy()
+        uploaded_data = get_uploaded_datasets()
+        datasets.extend(uploaded_data)
+
         with columns[0]:
             dataset = st.selectbox("Dataset", datasets, key="dataset")
 
@@ -86,12 +92,24 @@ def render_header() -> Tuple[Dict, Callable]:
                 model_name = st.session_state["model_name"]
                 file_name = "_".join([
                     dataset.replace(".csv", ""), model_name, ".csv"])
+                st.markdown("Download Results")
                 st.download_button(
                     label="Download",
                     data=download_data,
                     file_name=file_name,
                     mime='text/csv',
                 )
+
+        # uploader
+        with columns[5]:
+            uploaded_file = st.file_uploader(
+                "Upload your dataset",
+                type=["csv"],
+            )
+            if uploaded_file:
+                df = pd.read_csv(uploaded_file)
+                if validate_uploaded_data(df):
+                    put_uploaded_data_in_state(uploaded_file.name, df)
 
     header_conf = {
         "dataset": dataset,
@@ -123,7 +141,7 @@ def run_model(
     :return: predictions
     :rtype: pd.DataFrame
     """
-    data = read_data(dataset)
+    data = get_data(dataset)
     train_df, holidays_df = decompose_data(data, period)
     test_df = model.make_test_dataframe(train_df, period, horizon)
     fc = model.fit_predict(
